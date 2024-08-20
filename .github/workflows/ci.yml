@@ -1,0 +1,53 @@
+name: CI  # 工作流名称
+
+on:
+  push:
+    branches:
+      - main # 触发工作流的分支，此处为主分支
+
+jobs:
+  build:
+    runs-on: python:3.9-bullseye
+
+    steps:
+      - name: Checkout code # 步骤名称
+        uses: actions/checkout@v3 # 使用GitHub官方的checkout操作获取代码
+
+      - name: Build Docker image
+        run: |
+          docker build -t ywtest/my-app:${{ github.sha }} -f docker/Dockerfile .
+          docker tag ywtest/my-app:${{ github.sha }} ${{ secrets.MY_REGISTRY_HOST }}/ywtest/my-app:latest
+
+     # - name: Login to Docker Hub
+     #   uses: docker/login-action@v1 
+     #   with:
+     #     username: ${{ secrets.DOCKER_HUB_USERNAME }}
+     #     password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+     # - name: Push Docker image to Docker Hub
+     #   run: |
+     #     docker push username/my-app:latest
+     #     docker push username/my-app:${{ github.sha }}
+
+      - name: Login to My Registry
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.MY_REGISTRY_USERNAME }}
+          password: ${{ secrets.MY_REGISTRY_ACCESS_TOKEN }}
+
+      - name: Push Docker image to My Registry
+        run: |
+          docker push ${{ secrets.MY_REGISTRY_HOST }}/ywtest/my-app:latest 
+
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v0.1.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SERVER_KEY }}
+          script: |
+            docker pull ${{ secrets.MY_REGISTRY_HOST }}/ywtest/my-app:latest
+            cd ${{ secrets.MY_APP_PATH }}
+            git pull origin main
+            docker compose up -d ${{ secrets.MY_APP_SERVICE_NAME }}
+
