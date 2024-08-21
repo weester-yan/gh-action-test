@@ -2,4 +2,4 @@ version: '2'
 services:
   server:
     restart: always
-    image:  
+    image: connectai/my-app 
