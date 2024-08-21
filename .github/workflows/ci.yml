@@ -35,10 +35,13 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SERVER_KEY }}
+          envs: |
+            MY_REGISTRY_HOST=${{ secrets.MY_REGISTRY_HOST }}
+            MY_APP_PATH=${{ secrets.MY_APP_PATH }}
           script: |
-            docker pull ${{ secrets.MY_REGISTRY_HOST }}/ywtest/my-app:latest
-            cd ${{ secrets.MY_APP_PATH }}
+            docker pull $MY_REGISTRY_HOST/ywtest/my-app:latest
+            cd $MY_APP_PATH
             git pull origin main
-            sed -i 's|^\( *image: \).*|\1${{ ${{ secrets.MY_REGISTRY_HOST }}  }}|' docker-compose.yml
+            sed -i 's|^\( *image: \).*|\1$MY_REGISTRY_HOST|' docker-compose.yml
             docker compose up -d server 
 
